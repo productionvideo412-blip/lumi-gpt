@@ -85,7 +85,7 @@ const VoiceChat = () => {
         },
         body: JSON.stringify({
           messages: [{ role: "user", content: text }],
-          systemPrompt: "You are LUMI, a friendly AI assistant responding to voice input. Keep answers concise (2-3 sentences max) and conversational. Use simple language suitable for speaking aloud. Do NOT use markdown, code blocks, or special formatting.",
+          systemPrompt: systemPrompt,
         }),
       });
 
