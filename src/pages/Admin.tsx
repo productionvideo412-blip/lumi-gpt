@@ -200,6 +200,11 @@ const Admin = () => {
         ))}
       </div>
 
+      {/* System Prompt Section */}
+      <div className="mt-8 glass rounded-2xl p-4">
+        <SystemPromptManager />
+      </div>
+
       {/* Screenshot Preview Modal */}
       {previewImg && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6" onClick={() => setPreviewImg(null)}>
