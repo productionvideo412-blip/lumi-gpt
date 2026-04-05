@@ -18,11 +18,20 @@ const VoiceChat = () => {
   const [transcript, setTranscript] = useState("");
   const [response, setResponse] = useState("");
   const [waveform, setWaveform] = useState<number[]>(Array(WAVEFORM_BARS).fill(4));
+  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_VOICE_PROMPT);
   const animRef = useRef<number>(0);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    const fetchPrompt = async () => {
+      const { data } = await supabase.from("system_prompts").select("prompt_text").eq("is_active", true).limit(1).single();
+      if (data) setSystemPrompt((data as any).prompt_text + "\n\nKeep answers concise (2-3 sentences max) and conversational. Use simple language suitable for speaking aloud. Do NOT use markdown.");
+    };
+    fetchPrompt();
+  }, []);
 
   const animateWaveform = useCallback(() => {
     if (analyserRef.current && state === "listening") {
