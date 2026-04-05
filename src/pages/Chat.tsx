@@ -100,6 +100,8 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+const DEFAULT_SYSTEM_PROMPT = "You are LUMI GPT, an advanced AI assistant created by Eshant Jagtap. You are helpful, creative, and knowledgeable. You provide clear, accurate, and well-structured responses. You use markdown formatting when appropriate.";
+
 const Chat = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -110,9 +112,18 @@ const Chat = () => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [pendingImage, setPendingImage] = useState<{ file: File; preview: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [globalSystemPrompt, setGlobalSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchSystemPrompt = async () => {
+      const { data } = await supabase.from("system_prompts").select("prompt_text").eq("is_active", true).limit(1).single();
+      if (data) setGlobalSystemPrompt((data as any).prompt_text);
+    };
+    fetchSystemPrompt();
+  }, []);
 
   
 
