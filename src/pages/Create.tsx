@@ -62,7 +62,7 @@ const Create = () => {
         }
 
         const data = await resp.json();
-        setResult({ imageUrl: data.imageUrl, text: data.text });
+        setResult({ imageUrl: data.imageUrl, text: data.text, watermark: data.watermark });
       } else {
         // Streaming text for other generators
         const resp = await fetch(GENERATE_URL, {
