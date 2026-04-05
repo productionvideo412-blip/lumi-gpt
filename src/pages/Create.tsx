@@ -238,10 +238,10 @@ const Create = () => {
                     <img src={result.imageUrl} alt="Generated" className="w-full" />
                     {result.watermark && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="flex items-center gap-2 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-2xl rotate-[-15deg]">
-                          <Flower2 className="w-6 h-6 text-yellow-400" />
-                          <span className="text-white/70 font-handwritten text-lg font-bold">LUMI GPT</span>
-                          <Flower2 className="w-6 h-6 text-yellow-400" />
+                        <div className="flex items-center gap-2 bg-background/30 backdrop-blur-sm px-4 py-2 rounded-2xl rotate-[-15deg]">
+                          <Flower2 className="w-6 h-6 text-accent" />
+                          <span className="text-foreground/70 font-handwritten text-lg font-bold">LUMI GPT</span>
+                          <Flower2 className="w-6 h-6 text-accent" />
                         </div>
                       </div>
                     )}
