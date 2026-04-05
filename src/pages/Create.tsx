@@ -234,10 +234,27 @@ const Create = () => {
             {(result?.imageUrl || result?.text || streamedText) && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
                 {result?.imageUrl && (
-                  <div className="glass rounded-3xl overflow-hidden mb-4">
+                  <div className="glass rounded-3xl overflow-hidden mb-4 relative">
                     <img src={result.imageUrl} alt="Generated" className="w-full" />
-                    <div className="p-3 flex justify-end">
-                      <button onClick={downloadImage} className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl glass text-xs font-medium text-foreground hover:bg-primary/20 transition-colors">
+                    {result.watermark && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="flex items-center gap-2 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-2xl rotate-[-15deg]">
+                          <Flower2 className="w-6 h-6 text-yellow-400" />
+                          <span className="text-white/70 font-handwritten text-lg font-bold">LUMI GPT</span>
+                          <Flower2 className="w-6 h-6 text-yellow-400" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="p-3 flex items-center justify-between">
+                      {result.watermark && (
+                        <button
+                          onClick={() => navigate("/pricing")}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-accent/20 text-xs font-medium text-foreground hover:bg-accent/30 transition-colors"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" /> Remove watermark
+                        </button>
+                      )}
+                      <button onClick={downloadImage} className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl glass text-xs font-medium text-foreground hover:bg-primary/20 transition-colors ml-auto">
                         <Download className="w-3.5 h-3.5" /> Download
                       </button>
                     </div>
