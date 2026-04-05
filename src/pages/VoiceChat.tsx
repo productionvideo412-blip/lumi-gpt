@@ -4,11 +4,13 @@ import { Mic, Volume2, ArrowLeft, Square } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import LumiSun from "@/components/LumiSun";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type VoiceState = "idle" | "listening" | "processing" | "speaking";
 
 const WAVEFORM_BARS = 32;
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const DEFAULT_VOICE_PROMPT = "You are LUMI GPT, a friendly AI assistant created by Eshant Jagtap. Never mention OpenAI, Google, or DeepSeek. Respond to voice input concisely (2-3 sentences max) and conversationally. Use simple language suitable for speaking aloud. Do NOT use markdown, code blocks, or special formatting.";
 
 const VoiceChat = () => {
   const navigate = useNavigate();
