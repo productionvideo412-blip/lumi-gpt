@@ -5,7 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-const DEFAULT_PROMPT = "You are LUMI GPT, an advanced AI assistant created by Eshant Jagtap. You are helpful, creative, and knowledgeable. You provide clear, accurate, and well-structured responses. You use markdown formatting when appropriate.";
+const DEFAULT_PROMPT = `You are LUMI GPT, an advanced AI assistant created by Eshant Jagtap (CEO & Founder). You are helpful, creative, and knowledgeable. You provide clear, accurate, and well-structured responses. You use markdown formatting when appropriate.
+
+IMPORTANT IDENTITY RULES:
+- Your name is LUMI GPT. Never refer to yourself by any other name.
+- You were created by Eshant Jagtap, CEO & Founder.
+- Never mention OpenAI, Google, DeepSeek, or any other AI company as your creator.
+- If asked who made you, always say "Eshant Jagtap".
+- You are an independent AI assistant, not based on or powered by any third-party AI.`;
 
 interface SystemPrompt {
   id: string;
@@ -113,6 +120,12 @@ const SystemPromptManager = () => {
         placeholder="Enter system prompt for LUMI..."
         className="w-full glass rounded-2xl p-4 text-sm text-foreground placeholder:text-muted-foreground outline-none resize-none bg-transparent border border-border/30 focus:border-accent/50 transition-colors"
       />
+
+      {/* Character & Token Count */}
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
+        <span>{draft.length} characters</span>
+        <span>~{Math.ceil(draft.length / 4)} tokens (estimated)</span>
+      </div>
 
       {/* Action buttons */}
       <div className="flex gap-2">

@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Image, Wand2, Video, Music, Globe, Smartphone, Sparkles, ArrowLeft, Download, Loader2 } from "lucide-react";
+import { Image, Wand2, Video, Music, Globe, Smartphone, Sparkles, ArrowLeft, Download, Loader2, Flower2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import SideDrawer from "@/components/SideDrawer";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const GENERATE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate`;
 
@@ -20,12 +21,13 @@ const styles = ["Realistic", "Anime", "3D", "Cyberpunk", "Fantasy", "Indian", "C
 const ratios = ["1:1", "16:9", "9:16", "4:3", "3:4"];
 
 const Create = () => {
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<typeof categories[0] | null>(null);
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState("Realistic");
   const [ratio, setRatio] = useState("1:1");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ imageUrl?: string; text?: string } | null>(null);
+  const [result, setResult] = useState<{ imageUrl?: string; text?: string; watermark?: boolean } | null>(null);
   const [streamedText, setStreamedText] = useState("");
   const abortRef = useRef<AbortController | null>(null);
 
@@ -60,7 +62,7 @@ const Create = () => {
         }
 
         const data = await resp.json();
-        setResult({ imageUrl: data.imageUrl, text: data.text });
+        setResult({ imageUrl: data.imageUrl, text: data.text, watermark: data.watermark });
       } else {
         // Streaming text for other generators
         const resp = await fetch(GENERATE_URL, {
@@ -232,10 +234,27 @@ const Create = () => {
             {(result?.imageUrl || result?.text || streamedText) && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
                 {result?.imageUrl && (
-                  <div className="glass rounded-3xl overflow-hidden mb-4">
+                  <div className="glass rounded-3xl overflow-hidden mb-4 relative">
                     <img src={result.imageUrl} alt="Generated" className="w-full" />
-                    <div className="p-3 flex justify-end">
-                      <button onClick={downloadImage} className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl glass text-xs font-medium text-foreground hover:bg-primary/20 transition-colors">
+                    {result.watermark && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="flex items-center gap-2 bg-background/30 backdrop-blur-sm px-4 py-2 rounded-2xl rotate-[-15deg]">
+                          <Flower2 className="w-6 h-6 text-accent" />
+                          <span className="text-foreground/70 font-handwritten text-lg font-bold">LUMI GPT</span>
+                          <Flower2 className="w-6 h-6 text-accent" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="p-3 flex items-center justify-between">
+                      {result.watermark && (
+                        <button
+                          onClick={() => navigate("/pricing")}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-accent/20 text-xs font-medium text-foreground hover:bg-accent/30 transition-colors"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" /> Remove watermark
+                        </button>
+                      )}
+                      <button onClick={downloadImage} className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl glass text-xs font-medium text-foreground hover:bg-primary/20 transition-colors ml-auto">
                         <Download className="w-3.5 h-3.5" /> Download
                       </button>
                     </div>
