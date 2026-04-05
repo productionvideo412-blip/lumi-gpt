@@ -284,7 +284,7 @@ const Chat = () => {
     let assistantContent = "";
     await streamChat({
       messages: chatHistory,
-      systemPrompt: activeModel.systemPrompt,
+      systemPrompt: globalSystemPrompt + "\n\n" + activeModel.systemPrompt,
       onDelta: (chunk) => {
         assistantContent += chunk;
         setMessages((prev) => {
