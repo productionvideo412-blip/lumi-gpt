@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield, Users, CreditCard, Clock, Check, X, Filter, ArrowLeft, Eye } from "lucide-react";
+import { Shield, Users, CreditCard, Clock, Check, X, Filter, ArrowLeft, Eye, Brain } from "lucide-react";
+import SystemPromptManager from "@/components/SystemPromptManager";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -197,6 +198,11 @@ const Admin = () => {
             </div>
           </motion.div>
         ))}
+      </div>
+
+      {/* System Prompt Section */}
+      <div className="mt-8 glass rounded-2xl p-4">
+        <SystemPromptManager />
       </div>
 
       {/* Screenshot Preview Modal */}
