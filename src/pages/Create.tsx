@@ -21,12 +21,13 @@ const styles = ["Realistic", "Anime", "3D", "Cyberpunk", "Fantasy", "Indian", "C
 const ratios = ["1:1", "16:9", "9:16", "4:3", "3:4"];
 
 const Create = () => {
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<typeof categories[0] | null>(null);
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState("Realistic");
   const [ratio, setRatio] = useState("1:1");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ imageUrl?: string; text?: string } | null>(null);
+  const [result, setResult] = useState<{ imageUrl?: string; text?: string; watermark?: boolean } | null>(null);
   const [streamedText, setStreamedText] = useState("");
   const abortRef = useRef<AbortController | null>(null);
 
