@@ -250,7 +250,7 @@ const Chat = () => {
         let content = "";
         await streamChat({
           messages: chatHistory,
-          systemPrompt: model.systemPrompt + "\n\nKeep your response concise (max 3 paragraphs).",
+          systemPrompt: globalSystemPrompt + "\n\n" + model.systemPrompt + "\n\nKeep your response concise (max 3 paragraphs).",
           onDelta: (chunk) => { content += chunk; },
           onDone: () => {},
           signal: controller.signal,
