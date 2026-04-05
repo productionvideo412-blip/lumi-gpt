@@ -114,6 +114,12 @@ const SystemPromptManager = () => {
         className="w-full glass rounded-2xl p-4 text-sm text-foreground placeholder:text-muted-foreground outline-none resize-none bg-transparent border border-border/30 focus:border-accent/50 transition-colors"
       />
 
+      {/* Character & Token Count */}
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
+        <span>{draft.length} characters</span>
+        <span>~{Math.ceil(draft.length / 4)} tokens (estimated)</span>
+      </div>
+
       {/* Action buttons */}
       <div className="flex gap-2">
         <button
