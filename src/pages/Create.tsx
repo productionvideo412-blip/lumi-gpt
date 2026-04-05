@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Image, Wand2, Video, Music, Globe, Smartphone, Sparkles, ArrowLeft, Download, Loader2 } from "lucide-react";
+import { Image, Wand2, Video, Music, Globe, Smartphone, Sparkles, ArrowLeft, Download, Loader2, Flower2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import SideDrawer from "@/components/SideDrawer";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const GENERATE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate`;
 
