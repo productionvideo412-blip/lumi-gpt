@@ -17,7 +17,7 @@ const categories = [
   { icon: Smartphone, label: "App Builder", desc: "Design and prototype mobile apps", color: "bg-accent/30", type: "app" },
 ];
 
-const styles = ["Realistic", "Anime", "3D", "Cyberpunk", "Fantasy", "Indian", "Cartoon", "Ghibli", "Dark", "Cinematic"];
+const styles = ["None", "Realistic", "Anime", "3D", "Cyberpunk", "Fantasy", "Indian", "Cartoon", "Ghibli", "Dark", "Cinematic", "Watercolor"];
 const ratios = ["1:1", "16:9", "9:16", "4:3", "3:4"];
 
 const Create = () => {
