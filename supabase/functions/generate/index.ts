@@ -7,10 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function addSunflowerWatermark(base64Image: string): string {
-  // We'll add a text-based watermark indicator that the client will overlay
-  // The actual watermark is handled client-side since we can't use Canvas in Deno easily
-  return base64Image;
+function normalizeUrl(url: string) {
+  return url.replace(/\/+$/, "");
 }
 
 serve(async (req) => {
@@ -18,16 +16,20 @@ serve(async (req) => {
 
   try {
     const { prompt, type } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const OPEN_SOURCE_API_URL = Deno.env.get("OPEN_SOURCE_API_URL");
+    if (!OPEN_SOURCE_API_URL) throw new Error("OPEN_SOURCE_API_URL is not configured");
+
+    const OPEN_SOURCE_API_KEY = Deno.env.get("OPEN_SOURCE_API_KEY");
+    const OPEN_SOURCE_CHAT_MODEL = Deno.env.get("OPEN_SOURCE_CHAT_MODEL") ?? "llama-3-70b";
+    const OPEN_SOURCE_IMAGE_MODEL = Deno.env.get("OPEN_SOURCE_IMAGE_MODEL") ?? "stable-diffusion-xl";
 
     if (!prompt || typeof prompt !== "string" || prompt.length > 2000) {
       return new Response(JSON.stringify({ error: "Invalid prompt" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check user subscription for watermark
     let isFreePlan = true;
     const authHeader = req.headers.get("authorization");
     if (authHeader) {
@@ -52,7 +54,6 @@ serve(async (req) => {
       }
     }
 
-    // Fetch active system prompt
     let activeSystemPrompt = "";
     try {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -67,39 +68,6 @@ serve(async (req) => {
       if (promptData) activeSystemPrompt = promptData.prompt_text;
     } catch {}
 
-    // For image generation
-    if (type === "image") {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image",
-          messages: [{ role: "user", content: prompt }],
-          modalities: ["image", "text"],
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limited" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        if (response.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        const t = await response.text();
-        console.error("Image gen error:", response.status, t);
-        return new Response(JSON.stringify({ error: "Image generation failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
-      const data = await response.json();
-      const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-      const text = data.choices?.[0]?.message?.content || "";
-
-      return new Response(JSON.stringify({ imageUrl, text, watermark: isFreePlan }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // For text generation
     const systemPrompts: Record<string, string> = {
       video: "You are LUMI GPT, a creative AI created by Eshant Jagtap. Generate a detailed video script/storyboard. Never mention OpenAI, Google, or DeepSeek.",
       music: "You are LUMI GPT, a music composition AI created by Eshant Jagtap. Generate detailed music composition notes. Never mention OpenAI, Google, or DeepSeek.",
@@ -108,18 +76,51 @@ serve(async (req) => {
       edit: "You are LUMI GPT, an image editing AI created by Eshant Jagtap. Describe editing steps needed. Never mention OpenAI, Google, or DeepSeek.",
     };
 
+    if (type === "image") {
+      const imageSize = "1024x1024";
+      const response = await fetch(`${normalizeUrl(OPEN_SOURCE_API_URL)}/v1/images/generations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(OPEN_SOURCE_API_KEY ? { Authorization: `Bearer ${OPEN_SOURCE_API_KEY}` } : {}),
+        },
+        body: JSON.stringify({
+          model: OPEN_SOURCE_IMAGE_MODEL,
+          prompt,
+          size: imageSize,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limited" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (response.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        const t = await response.text();
+        console.error("Image generation error:", response.status, t);
+        return new Response(JSON.stringify({ error: "Image generation failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const data = await response.json();
+      const imageUrl = data?.data?.[0]?.url ?? null;
+      const imageBase64 = data?.data?.[0]?.b64_json;
+      const finalUrl = imageUrl ?? (imageBase64 ? `data:image/png;base64,${imageBase64}` : null);
+
+      return new Response(JSON.stringify({ imageUrl: finalUrl, text: data?.text || "", watermark: isFreePlan }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const finalSystemPrompt = activeSystemPrompt
       ? activeSystemPrompt + "\n\n" + (systemPrompts[type] || systemPrompts.video)
       : systemPrompts[type] || systemPrompts.video;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(`${normalizeUrl(OPEN_SOURCE_API_URL)}/v1/chat/completions`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
+        ...(OPEN_SOURCE_API_KEY ? { Authorization: `Bearer ${OPEN_SOURCE_API_KEY}` } : {}),
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: OPEN_SOURCE_CHAT_MODEL,
         messages: [
           { role: "system", content: finalSystemPrompt },
           { role: "user", content: prompt },
@@ -131,6 +132,8 @@ serve(async (req) => {
     if (!response.ok) {
       if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limited" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (response.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const text = await response.text();
+      console.error("Text generation error:", response.status, text);
       return new Response(JSON.stringify({ error: "Generation failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -140,7 +143,8 @@ serve(async (req) => {
   } catch (e) {
     console.error("generate error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

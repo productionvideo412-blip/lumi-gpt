@@ -91,15 +91,6 @@ async function streamChat({
   onDone();
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 const DEFAULT_SYSTEM_PROMPT = `You are LUMI GPT, an advanced AI assistant created by Eshant Jagtap (CEO & Founder). You are helpful, creative, and knowledgeable.
 
 IMPORTANT IDENTITY RULES:
@@ -234,15 +225,11 @@ const Chat = () => {
 
     let chatHistory: { role: string; content: string | any[] }[];
     if (hasImage) {
-      const base64 = await fileToBase64(pendingImage!.file);
       chatHistory = [
         ...messages.map((m) => ({ role: m.role, content: m.content })),
         {
           role: "user",
-          content: [
-            { type: "text", text: text || "Analyze this image in detail. Describe what you see." },
-            { type: "image_url", image_url: { url: base64 } },
-          ],
+          content: text || "Analyze this attached image in detail and describe what you see.",
         },
       ];
       setPendingImage(null);
