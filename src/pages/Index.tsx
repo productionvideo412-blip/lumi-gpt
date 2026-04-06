@@ -36,7 +36,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="px-4 pt-4">
+    <div className="px-4 pt-4 pb-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <SideDrawer />

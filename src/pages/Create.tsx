@@ -237,11 +237,10 @@ const Create = () => {
                   <div className="glass rounded-3xl overflow-hidden mb-4 relative">
                     <img src={result.imageUrl} alt="Generated" className="w-full" />
                     {result.watermark && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="flex items-center gap-2 bg-background/30 backdrop-blur-sm px-4 py-2 rounded-2xl rotate-[-15deg]">
-                          <Flower2 className="w-6 h-6 text-accent" />
-                          <span className="text-foreground/70 font-handwritten text-lg font-bold">LUMI GPT</span>
-                          <Flower2 className="w-6 h-6 text-accent" />
+                      <div className="absolute bottom-3 right-3 pointer-events-none">
+                        <div className="flex items-center gap-1 bg-background/40 backdrop-blur-sm px-2 py-1 rounded-xl">
+                          <Flower2 className="w-3.5 h-3.5 text-accent" />
+                          <span className="text-foreground/60 font-handwritten text-[11px] font-semibold">LUMI GPT</span>
                         </div>
                       </div>
                     )}
