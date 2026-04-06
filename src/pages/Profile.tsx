@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Bookmark, Crown, Palette, Bell, Languages, Settings, ChevronRight, LogOut, Moon, Sun, HelpCircle, Check, X } from "lucide-react";
+import { User, Bookmark, Crown, Palette, Bell, Languages, Settings, ChevronRight, LogOut, Moon, Sun, HelpCircle, Check, X, Calendar, Save, PartyPopper } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SideDrawer from "@/components/SideDrawer";
 import LumiSun from "@/components/LumiSun";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/hooks/useSubscription";
+import { toast } from "sonner";
 
 const languages = [
   { code: "en", label: "English" },
@@ -19,13 +20,13 @@ const languages = [
   { code: "zh", label: "Chinese" },
 ];
 
-type Section = null | "notifications" | "language" | "settings" | "help" | "saved";
+type Section = null | "notifications" | "language" | "settings" | "help" | "saved" | "editProfile";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, isGuest, signOut } = useAuth();
   const { plan, usage } = useSubscription();
-  const [profile, setProfile] = useState<{ display_name: string | null; avatar_url: string | null }>({ display_name: null, avatar_url: null });
+  const [profile, setProfile] = useState<{ display_name: string | null; avatar_url: string | null; birth_date: string | null; age: number | null }>({ display_name: null, avatar_url: null, birth_date: null, age: null });
   const [messageCount, setMessageCount] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
   const [activeSection, setActiveSection] = useState<Section>(null);
@@ -34,18 +35,45 @@ const Profile = () => {
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState("");
+  const [showBirthdayWish, setShowBirthdayWish] = useState(false);
+
+  // Profile edit form state
+  const [editName, setEditName] = useState("");
+  const [editAge, setEditAge] = useState("");
+  const [editBirthDate, setEditBirthDate] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("display_name, avatar_url").eq("user_id", user.id).single()
-      .then(({ data }) => { if (data) { setProfile(data); setNameInput(data.display_name || ""); } });
+    supabase.from("profiles").select("display_name, avatar_url, birth_date, age").eq("user_id", user.id).single()
+      .then(({ data }) => {
+        if (data) {
+          const d = data as any;
+          setProfile({ display_name: d.display_name, avatar_url: d.avatar_url, birth_date: d.birth_date, age: d.age });
+          setNameInput(d.display_name || "");
+          setEditName(d.display_name || "");
+          setEditAge(d.age?.toString() || "");
+          setEditBirthDate(d.birth_date || "");
+          // Check birthday
+          if (d.birth_date) {
+            checkBirthday(d.birth_date);
+          }
+        }
+      });
     supabase.from("messages").select("id", { count: "exact", head: true })
       .then(({ count }) => setMessageCount(count || 0));
     supabase.from("conversations").select("id", { count: "exact", head: true }).eq("user_id", user.id)
       .then(({ count }) => setSessionCount(count || 0));
   }, [user]);
 
-  // Realtime subscription for message count
+  const checkBirthday = (birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    if (birth.getMonth() === today.getMonth() && birth.getDate() === today.getDate()) {
+      setShowBirthdayWish(true);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     const channel = supabase.channel("profile-messages").on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
@@ -63,9 +91,29 @@ const Profile = () => {
 
   const saveName = async () => {
     if (!user || !nameInput.trim()) return;
-    await supabase.from("profiles").update({ display_name: nameInput.trim() }).eq("user_id", user.id);
+    await supabase.from("profiles").update({ display_name: nameInput.trim() } as any).eq("user_id", user.id);
     setProfile((p) => ({ ...p, display_name: nameInput.trim() }));
     setEditingName(false);
+  };
+
+  const saveProfile = async () => {
+    if (!user) return;
+    setSaving(true);
+    const updates: any = {};
+    if (editName.trim()) updates.display_name = editName.trim();
+    if (editAge) updates.age = parseInt(editAge);
+    if (editBirthDate) updates.birth_date = editBirthDate;
+
+    const { error } = await supabase.from("profiles").update(updates).eq("user_id", user.id);
+    if (error) {
+      toast.error("Failed to save profile");
+    } else {
+      setProfile((p) => ({ ...p, ...updates }));
+      setNameInput(editName.trim());
+      toast.success("Profile saved successfully!");
+      if (editBirthDate) checkBirthday(editBirthDate);
+    }
+    setSaving(false);
   };
 
   const stats = [
@@ -87,8 +135,65 @@ const Profile = () => {
             {activeSection === "settings" && "General Settings"}
             {activeSection === "help" && "Help & Support"}
             {activeSection === "saved" && "Saved Creations"}
+            {activeSection === "editProfile" && "Edit Profile"}
           </h1>
         </div>
+
+        {activeSection === "editProfile" && (
+          <div className="space-y-4">
+            <div className="glass rounded-2xl p-4">
+              <label className="text-xs font-medium text-muted-foreground mb-2 block">Display Name</label>
+              <input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Enter your name"
+                className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none py-2 border-b border-border/30 focus:border-accent transition-colors"
+              />
+            </div>
+
+            <div className="glass rounded-2xl p-4">
+              <label className="text-xs font-medium text-muted-foreground mb-2 block">Age</label>
+              <input
+                type="number"
+                value={editAge}
+                onChange={(e) => setEditAge(e.target.value)}
+                placeholder="Enter your age"
+                min="1"
+                max="150"
+                className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none py-2 border-b border-border/30 focus:border-accent transition-colors"
+              />
+            </div>
+
+            <div className="glass rounded-2xl p-4">
+              <label className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5" /> Birth Date
+              </label>
+              <input
+                type="date"
+                value={editBirthDate}
+                onChange={(e) => setEditBirthDate(e.target.value)}
+                className="w-full bg-transparent text-sm text-foreground outline-none py-2 border-b border-border/30 focus:border-accent transition-colors"
+              />
+            </div>
+
+            {profile.birth_date && (
+              <div className="glass rounded-2xl p-4">
+                <p className="text-xs text-muted-foreground">Current birthday: {new Date(profile.birth_date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</p>
+              </div>
+            )}
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={saveProfile}
+              disabled={saving}
+              className="w-full py-3.5 rounded-2xl bg-accent text-accent-foreground font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? "Saving..." : "Save Profile"}
+            </motion.button>
+          </div>
+        )}
 
         {activeSection === "notifications" && (
           <div className="space-y-3">
@@ -196,6 +301,7 @@ const Profile = () => {
   }
 
   const menuItems = [
+    { icon: User, label: "Edit Profile", action: () => setActiveSection("editProfile") },
     { icon: Bookmark, label: "Saved Creations", action: () => setActiveSection("saved") },
     { icon: Crown, label: "Subscription", badge: plan.charAt(0).toUpperCase() + plan.slice(1), action: () => navigate("/pricing") },
     { icon: Palette, label: "Theme Settings", action: toggleTheme },
@@ -210,8 +316,30 @@ const Profile = () => {
       <div className="flex items-center justify-between mb-6">
         <SideDrawer />
         <h1 className="font-handwritten text-xl text-foreground">Profile</h1>
-        <Settings className="w-5 h-5 text-muted-foreground" />
+        <button onClick={() => setActiveSection("settings")} className="p-1.5 rounded-xl hover:bg-primary/10 transition-colors">
+          <Settings className="w-5 h-5 text-muted-foreground" />
+        </button>
       </div>
+
+      {/* Birthday Wish */}
+      {showBirthdayWish && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass rounded-3xl p-4 mb-6 border border-accent/30 bg-accent/5"
+        >
+          <div className="flex items-center gap-3">
+            <PartyPopper className="w-8 h-8 text-accent flex-shrink-0" />
+            <div>
+              <p className="font-handwritten text-base font-semibold text-foreground">Happy Birthday, {displayName}!</p>
+              <p className="text-xs text-muted-foreground mt-0.5">LUMI wishes you a wonderful day filled with joy!</p>
+            </div>
+            <button onClick={() => setShowBirthdayWish(false)} className="p-1 rounded-lg hover:bg-primary/10 ml-auto">
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center mb-8">
         <div className="w-20 h-20 rounded-3xl bg-primary/20 flex items-center justify-center mb-3 relative">
@@ -222,6 +350,9 @@ const Profile = () => {
         <p className="text-xs text-muted-foreground">
           {plan !== "free" ? `${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan` : "Free Plan"}
         </p>
+        {profile.age && (
+          <p className="text-[10px] text-muted-foreground mt-0.5">Age: {profile.age}</p>
+        )}
       </motion.div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="grid grid-cols-3 gap-3 mb-6">
