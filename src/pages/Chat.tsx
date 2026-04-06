@@ -310,7 +310,7 @@ const Chat = () => {
 
   return (
     <div
-      className={`flex flex-col h-screen ${isDragOver ? "ring-2 ring-accent ring-inset" : ""}`}
+      className={`flex flex-col h-[calc(100vh-5rem)] ${isDragOver ? "ring-2 ring-accent ring-inset" : ""}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

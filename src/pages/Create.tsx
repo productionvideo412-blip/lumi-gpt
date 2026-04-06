@@ -42,7 +42,7 @@ const Create = () => {
 
     try {
       const fullPrompt = selected.type === "image"
-        ? `${prompt}. Style: ${style}. Aspect ratio: ${ratio}.`
+        ? style === "None" ? prompt : `${prompt}. Style: ${style}. Aspect ratio: ${ratio}.`
         : prompt;
 
       if (selected.type === "image") {
