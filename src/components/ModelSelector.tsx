@@ -1,21 +1,23 @@
 import { useState } from "react";
-import { ChevronDown, Sparkles, Brain, Code, Languages, Eye, Image, Mic, Volume2, Zap } from "lucide-react";
+import { ChevronDown, Sparkles, Brain, Eye, Image, Mic, Zap } from "lucide-react";
 import { models, type ModelInfo } from "@/lib/model-router";
 import { motion, AnimatePresence } from "framer-motion";
 
 const modelIcons: Record<string, any> = {
-  deepseek: Brain,
-  qwen: Code,
-  glm: Languages,
+  llama70b: Brain,
+  mixtral: Zap,
+  llama8b: Zap,
   gemma: Eye,
-  flux: Image,
+  stablediffusion: Image,
+  dreamshaper: Image,
+  sdxlturbo: Image,
+  deepfloyd: Image,
+  realesrgan: Image,
   whisper: Mic,
-  cosyvoice: Volume2,
-  llama: Zap,
 };
 
 const selectableModels = Object.values(models).filter(
-  (m) => !["whisper", "cosyvoice"].includes(m.id)
+  (m) => !["whisper"].includes(m.id)
 );
 
 interface ModelSelectorProps {

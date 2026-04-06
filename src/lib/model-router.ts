@@ -6,69 +6,87 @@ export interface ModelInfo {
 }
 
 export const models: Record<string, ModelInfo> = {
-  deepseek: {
-    id: "deepseek",
-    label: "DeepSeek V3.2",
-    description: "Advanced reasoning & research",
+  llama70b: {
+    id: "llama70b",
+    label: "LLaMA 3 70B",
+    description: "Smart chat, reasoning & AI assistant",
     systemPrompt:
-      "You are LUMI operating in deep research mode. Provide thorough, well-reasoned, analytical answers. Break down complex topics step by step. Cite reasoning. Use markdown formatting.",
+      "You are LUMI operating with LLaMA 3 70B. Provide intelligent, well-reasoned responses. Excel at complex reasoning tasks, analytical thinking, and comprehensive explanations. Use markdown formatting.",
   },
-  qwen: {
-    id: "qwen",
-    label: "Qwen3-Coder 480B",
-    description: "Coding, websites & apps",
+  mixtral: {
+    id: "mixtral",
+    label: "Mixtral 8x7B",
+    description: "Speed + intelligence balance",
     systemPrompt:
-      "You are LUMI operating in coding mode. You are an expert programmer. Write clean, well-commented code. Support HTML, CSS, JavaScript, Python, Java, C++, React, and Flutter. Always use code blocks with syntax highlighting.",
+      "You are LUMI operating with Mixtral 8x7B. Balance speed and quality in your responses. Provide smart, efficient answers without unnecessary verbosity.",
   },
-  glm: {
-    id: "glm",
-    label: "GLM-5",
-    description: "Multilingual chat",
+  llama8b: {
+    id: "llama8b",
+    label: "LLaMA 3 8B",
+    description: "Fast response for mobile apps",
     systemPrompt:
-      "You are LUMI operating in multilingual conversation mode. You are fluent in Hindi, Marathi, Urdu, and English. Reply in the same language the user writes in. Be warm, natural, and conversational.",
+      "You are LUMI operating in lightweight mode. Give fast, concise answers optimized for mobile devices. Be brief but helpful.",
   },
   gemma: {
     id: "gemma",
-    label: "Gemma 4 27B",
-    description: "Image understanding & vision",
+    label: "Gemma 7B",
+    description: "Low cost, simple AI features",
     systemPrompt:
-      "You are LUMI operating in vision mode. Analyze images in detail. Describe what you see, extract text, identify objects, and answer questions about uploaded images.",
+      "You are LUMI operating in efficient mode. Provide helpful, straightforward answers. Optimize for cost efficiency while maintaining quality.",
   },
-  flux: {
-    id: "flux",
-    label: "Flux.1 Kontext Pro",
-    description: "Image generation & editing",
+  stablediffusion: {
+    id: "stablediffusion",
+    label: "Stable Diffusion XL",
+    description: "Ultra realistic photos & portraits",
     systemPrompt:
-      "You are LUMI operating in image generation mode. Help users craft detailed image prompts. Suggest styles, compositions, and artistic directions.",
+      "You are LUMI operating with Stable Diffusion XL. Help users create ultra-realistic image prompts for photos, portraits, ads, and product images. Suggest detailed descriptions for photorealistic results.",
+  },
+  dreamshaper: {
+    id: "dreamshaper",
+    label: "DreamShaper",
+    description: "Anime, fantasy & creative artwork",
+    systemPrompt:
+      "You are LUMI operating with DreamShaper. Help users create creative image prompts for anime, fantasy, and artistic styles. Suggest creative directions and artistic compositions.",
+  },
+  sdxlturbo: {
+    id: "sdxlturbo",
+    label: "SDXL Turbo",
+    description: "Fast instant preview generation",
+    systemPrompt:
+      "You are LUMI operating with SDXL Turbo. Generate fast image previews and quick iterations. Optimize for speed while maintaining quality.",
+  },
+  deepfloyd: {
+    id: "deepfloyd",
+    label: "DeepFloyd IF",
+    description: "Complex prompts & text accuracy",
+    systemPrompt:
+      "You are LUMI operating with DeepFloyd IF. Help users create detailed prompts with precise text understanding. Excellent for complex and specific image requirements.",
+  },
+  realesrgan: {
+    id: "realesrgan",
+    label: "Real-ESRGAN",
+    description: "HD upscale, blur removal & enhancement",
+    systemPrompt:
+      "You are LUMI operating with Real-ESRGAN. Help users enhance, upscale, and improve image quality. Guide them through image enhancement workflows.",
   },
   whisper: {
     id: "whisper",
-    label: "Whisper Large V3",
-    description: "Speech recognition",
-    systemPrompt: "You are LUMI processing voice input via Whisper Large V3.",
-  },
-  cosyvoice: {
-    id: "cosyvoice",
-    label: "CosyVoice 2",
-    description: "Realistic voice output",
-    systemPrompt: "You are LUMI generating voice responses via CosyVoice 2.",
-  },
-  llama: {
-    id: "llama",
-    label: "Llama 4 Maverick",
-    description: "Fast lightweight answers",
-    systemPrompt:
-      "You are LUMI operating in fast mode. Give concise, direct, and quick answers. Be brief but helpful.",
+    label: "Whisper",
+    description: "Speech to text conversion",
+    systemPrompt: "You are LUMI processing voice input via Whisper for accurate speech-to-text conversion.",
   },
 };
 
 const routingRules: { pattern: RegExp; modelId: string }[] = [
-  { pattern: /\b(code|coding|program|debug|function|class|import|export|html|css|javascript|python|java|c\+\+|react|flutter|api|endpoint|component|build.*(app|website|page|site)|fix.*(bug|error|code)|write.*(code|script|function))\b/i, modelId: "qwen" },
-  { pattern: /\b(generate.*(image|picture|photo|art|illustration)|create.*(image|picture|logo|icon|poster)|draw|paint|design.*(image|logo|banner)|image.*(generat|creat))\b/i, modelId: "flux" },
-  { pattern: /\b(analyze.*(image|photo|picture)|describe.*(image|photo)|what.*image|upload.*(image|photo)|look.*at.*this|ocr|read.*text.*image)\b/i, modelId: "gemma" },
-  { pattern: /\b(research|analyze|explain.*detail|compare|evaluate|thesis|academic|scientific|study|investigate|deep.*dive|thorough|comprehensive)\b/i, modelId: "deepseek" },
-  { pattern: /[\u0900-\u097F]|[\u0600-\u06FF]|\b(hindi|marathi|urdu|namaste|kaise|kya|aap|mujhe|batao|bolo)\b/i, modelId: "glm" },
+  { pattern: /\b(upscal|enhance|improve|quality|blur|denoise|hd|4k|sharpen|better quality)\b/i, modelId: "realesrgan" },
+  { pattern: /\b(anime|fantasy|creative|art|illustration|artistic|style|character|fantasy art)\b/i, modelId: "dreamshaper" },
+  { pattern: /\b(fast|quick|preview|instant|turbo|speed|real-time)\b/i, modelId: "sdxlturbo" },
+  { pattern: /\b(text|complex|prompt|detail|accurate|specific|description)\b/i, modelId: "deepfloyd" },
+  { pattern: /\b(photo|portrait|realistic|product|ad|commercial|real-world|photorealistic)\b/i, modelId: "stablediffusion" },
+  { pattern: /\b(generate.*(image|picture|photo|art|illustration)|create.*(image|picture|logo|icon|poster)|draw|paint|design.*(image|logo|banner)|image.*(generat|creat))\b/i, modelId: "stablediffusion" },
   { pattern: /\b(voice|speak|listen|microphone|audio|speech)\b/i, modelId: "whisper" },
+  { pattern: /\b(fast|quick|speed|mobile|lightweight|efficient)\b/i, modelId: "llama8b" },
+  { pattern: /\b(reasoning|explain.*detail|analyze|compare|evaluate|think|complex)\b/i, modelId: "llama70b" },
 ];
 
 export function detectModel(input: string): ModelInfo {
@@ -77,7 +95,7 @@ export function detectModel(input: string): ModelInfo {
       return models[rule.modelId];
     }
   }
-  return models.llama;
+  return models.mixtral;
 }
 
-export const fusionModels = [models.deepseek, models.qwen, models.glm];
+export const fusionModels = [models.llama70b, models.mixtral, models.gemma];
