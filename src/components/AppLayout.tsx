@@ -5,7 +5,7 @@ import FloatingClouds from "./FloatingClouds";
 const AppLayout = () => (
   <div className="min-h-screen bg-background relative overflow-x-hidden">
     <FloatingClouds />
-    <main className="relative z-10 pb-20 max-w-4xl mx-auto">
+    <main className="relative z-10 max-w-4xl mx-auto">
       <Outlet />
     </main>
     <BottomNav />
