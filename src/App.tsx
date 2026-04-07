@@ -18,6 +18,7 @@ import VoiceChat from "./pages/VoiceChat";
 import Pricing from "./pages/Pricing";
 import Payment from "./pages/Payment";
 import Admin from "./pages/Admin";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const AppRoutes = () => {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

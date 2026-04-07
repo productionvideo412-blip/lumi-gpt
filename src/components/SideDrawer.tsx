@@ -1,5 +1,5 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, History, BookmarkCheck, Brain, Settings, Palette, Crown, HelpCircle, Moon, Sun, Mic } from "lucide-react";
+import { Menu, History, BookmarkCheck, Brain, Settings, Palette, Crown, HelpCircle, Moon, Sun, Mic, Shield, Key } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LumiSun from "./LumiSun";
@@ -10,8 +10,8 @@ const menuItems = [
   { icon: Mic, label: "Voice Chat", path: "/voice" },
   { icon: Brain, label: "Memory", path: "/memory" },
   { icon: Crown, label: "Pricing", path: "/pricing" },
-  { icon: Settings, label: "Settings", path: "/profile" },
-  { icon: Palette, label: "Theme", path: "/profile" },
+  { icon: Key, label: "API Settings", path: "/settings" },
+  { icon: Settings, label: "Profile", path: "/profile" },
   { icon: HelpCircle, label: "Help", path: "/" },
 ];
 
@@ -24,7 +24,18 @@ const SideDrawer = ({ onSelectConversation, onNewChat }: SideDrawerProps) => {
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin");
+      if (data && data.length > 0) setIsAdmin(true);
+    };
+    checkAdmin();
+  }, []);
 
   const loadConversations = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -102,8 +113,17 @@ const SideDrawer = ({ onSelectConversation, onNewChat }: SideDrawerProps) => {
             className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-sm font-medium text-foreground hover:bg-primary/15 transition-colors"
           >
             {dark ? <Sun className="w-4 h-4 text-accent" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
-            {dark ? "Light Mode" : "Dark Mode"}
+          {dark ? "Light Mode" : "Dark Mode"}
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => { navigate("/admin"); setOpen(false); }}
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-sm font-medium text-foreground hover:bg-primary/15 transition-colors"
+            >
+              <Shield className="w-4 h-4 text-accent" />
+              Admin Dashboard
+            </button>
+          )}
         </div>
       </SheetContent>
     </Sheet>
