@@ -8,6 +8,8 @@ import SideDrawer from "@/components/SideDrawer";
 import { detectModel, fusionModels, models, type ModelInfo } from "@/lib/model-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { sendChatMessage } from "@/services/chatService";
+import { resolveApiKey } from "@/services/apiKeys";
 
 interface Message {
   id: string;
