@@ -113,8 +113,17 @@ const SideDrawer = ({ onSelectConversation, onNewChat }: SideDrawerProps) => {
             className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-sm font-medium text-foreground hover:bg-primary/15 transition-colors"
           >
             {dark ? <Sun className="w-4 h-4 text-accent" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
-            {dark ? "Light Mode" : "Dark Mode"}
+          {dark ? "Light Mode" : "Dark Mode"}
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => { navigate("/admin"); setOpen(false); }}
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-sm font-medium text-foreground hover:bg-primary/15 transition-colors"
+            >
+              <Shield className="w-4 h-4 text-accent" />
+              Admin Dashboard
+            </button>
+          )}
         </div>
       </SheetContent>
     </Sheet>
