@@ -24,7 +24,18 @@ const SideDrawer = ({ onSelectConversation, onNewChat }: SideDrawerProps) => {
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin");
+      if (data && data.length > 0) setIsAdmin(true);
+    };
+    checkAdmin();
+  }, []);
 
   const loadConversations = async () => {
     const { data: { user } } = await supabase.auth.getUser();
