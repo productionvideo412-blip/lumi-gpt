@@ -59,6 +59,7 @@ const AppRoutes = () => {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

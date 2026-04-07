@@ -1,5 +1,5 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, History, BookmarkCheck, Brain, Settings, Palette, Crown, HelpCircle, Moon, Sun, Mic } from "lucide-react";
+import { Menu, History, BookmarkCheck, Brain, Settings, Palette, Crown, HelpCircle, Moon, Sun, Mic, Shield, Key } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LumiSun from "./LumiSun";
