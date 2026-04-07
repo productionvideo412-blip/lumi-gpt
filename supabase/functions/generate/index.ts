@@ -77,36 +77,44 @@ serve(async (req) => {
     };
 
     if (type === "image") {
-      const imageSize = "1024x1024";
-      const response = await fetch(`${normalizeUrl(OPEN_SOURCE_API_URL)}/v1/images/generations`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(OPEN_SOURCE_API_KEY ? { Authorization: `Bearer ${OPEN_SOURCE_API_KEY}` } : {}),
-        },
-        body: JSON.stringify({
-          model: OPEN_SOURCE_IMAGE_MODEL,
-          prompt,
-          size: imageSize,
-        }),
-      });
+      // Use local Stable Diffusion API
+      const LOCAL_IMAGE_API_URL = Deno.env.get("LOCAL_IMAGE_API_URL") ?? "http://localhost:8001";
+      
+      try {
+        const response = await fetch(`${normalizeUrl(LOCAL_IMAGE_API_URL)}/generate-image`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            negative_prompt: "",
+            num_inference_steps: 30,
+            guidance_scale: 7.5,
+          }),
+        });
 
-      if (!response.ok) {
-        if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limited" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        if (response.status === 402) return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        const t = await response.text();
-        console.error("Image generation error:", response.status, t);
-        return new Response(JSON.stringify({ error: "Image generation failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          console.error("Local image generation error:", response.status, errData);
+          return new Response(JSON.stringify({ error: "Image generation failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        const data = await response.json();
+        const localImagePath = data?.image_path;
+        
+        // Return the image path for the frontend to fetch
+        return new Response(JSON.stringify({ 
+          imageUrl: `${normalizeUrl(LOCAL_IMAGE_API_URL)}${localImagePath}`,
+          text: data.filename || "",
+          watermark: false
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (error) {
+        console.error("Error calling local image API:", error);
+        return new Response(JSON.stringify({ error: "Failed to connect to image generation service" }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-
-      const data = await response.json();
-      const imageUrl = data?.data?.[0]?.url ?? null;
-      const imageBase64 = data?.data?.[0]?.b64_json;
-      const finalUrl = imageUrl ?? (imageBase64 ? `data:image/png;base64,${imageBase64}` : null);
-
-      return new Response(JSON.stringify({ imageUrl: finalUrl, text: data?.text || "", watermark: isFreePlan }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     const finalSystemPrompt = activeSystemPrompt
