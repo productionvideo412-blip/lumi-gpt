@@ -79,6 +79,26 @@ const VoiceChat = () => {
   const getAIResponse = async (text: string) => {
     setState("processing");
     try {
+      // Try direct providers first
+      const groqKey = await resolveApiKey("groq");
+      const orKey = await resolveApiKey("openrouter");
+
+      if (groqKey || orKey) {
+        try {
+          const fullResponse = await voiceAssistantFlow({
+            text,
+            systemPrompt: systemPrompt,
+            onDelta: () => {},
+          });
+          setResponse(fullResponse);
+          speak(fullResponse);
+          return;
+        } catch (err: any) {
+          console.warn("Direct provider failed for voice, falling back:", err.message);
+        }
+      }
+
+      // Fallback to edge function
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
