@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield, Users, CreditCard, Clock, Check, X, Filter, ArrowLeft, Eye, Brain } from "lucide-react";
+import { Shield, Users, CreditCard, Clock, Check, X, Filter, ArrowLeft, Eye, Brain, Key, Save, Loader2 } from "lucide-react";
 import SystemPromptManager from "@/components/SystemPromptManager";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,21 @@ interface Payment {
   created_at: string;
 }
 
+interface ApiSetting {
+  id: string;
+  provider: string;
+  api_key: string;
+  api_url: string;
+  is_active: boolean;
+}
+
+const providerLabels: Record<string, string> = {
+  groq: "Groq",
+  openrouter: "OpenRouter",
+  huggingface: "Hugging Face",
+  replicate: "Replicate",
+};
+
 const Admin = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -27,6 +42,8 @@ const Admin = () => {
   const [filter, setFilter] = useState<string>("pending");
   const [stats, setStats] = useState({ totalUsers: 0, activeSubs: 0, pendingPayments: 0, revenue: 0 });
   const [previewImg, setPreviewImg] = useState<string | null>(null);
+  const [apiSettings, setApiSettings] = useState<ApiSetting[]>([]);
+  const [savingKeys, setSavingKeys] = useState(false);
 
   useEffect(() => {
     checkAdmin();
@@ -39,19 +56,18 @@ const Admin = () => {
     setIsAdmin(admin);
     if (admin) {
       loadData();
+      loadApiSettings();
     }
     setLoading(false);
   };
 
   const loadData = async () => {
-    // Load payments
     const { data: paymentsData } = await supabase
       .from("payments" as any)
       .select("*")
       .order("created_at", { ascending: false });
     if (paymentsData) setPayments(paymentsData as any);
 
-    // Load stats
     const { count: userCount } = await supabase.from("profiles").select("*", { count: "exact", head: true });
     const { data: subsData } = await supabase.from("subscriptions" as any).select("plan");
     const activeSubs = (subsData as any[])?.filter((s: any) => s.plan !== "free").length || 0;
@@ -61,11 +77,37 @@ const Admin = () => {
     setStats({ totalUsers: userCount || 0, activeSubs, pendingPayments: pending, revenue });
   };
 
+  const loadApiSettings = async () => {
+    const { data } = await supabase.from("api_settings" as any).select("*").order("provider");
+    if (data) setApiSettings(data as any);
+  };
+
+  const updateApiKey = (provider: string, newKey: string) => {
+    setApiSettings((prev) =>
+      prev.map((s) => (s.provider === provider ? { ...s, api_key: newKey } : s))
+    );
+  };
+
+  const saveApiKeys = async () => {
+    setSavingKeys(true);
+    try {
+      for (const setting of apiSettings) {
+        await supabase
+          .from("api_settings" as any)
+          .update({ api_key: setting.api_key, updated_by: user!.id, updated_at: new Date().toISOString() } as any)
+          .eq("id", setting.id);
+      }
+      toast.success("API keys saved successfully");
+    } catch {
+      toast.error("Failed to save API keys");
+    }
+    setSavingKeys(false);
+  };
+
   const handleAction = async (paymentId: string, action: "approved" | "rejected") => {
     const payment = payments.find((p) => p.id === paymentId);
     if (!payment) return;
 
-    // Update payment status
     await supabase.from("payments" as any).update({
       status: action,
       reviewed_by: user!.id,
@@ -131,6 +173,38 @@ const Admin = () => {
             <p className="font-handwritten text-lg font-semibold text-foreground">{s.value}</p>
           </motion.div>
         ))}
+      </div>
+
+      {/* API Keys Section */}
+      <div className="glass rounded-2xl p-4 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Key className="w-5 h-5 text-accent" />
+          <h2 className="font-handwritten text-lg text-foreground">AI Provider API Keys</h2>
+        </div>
+        <div className="space-y-3">
+          {apiSettings.map((setting) => (
+            <div key={setting.id}>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                {providerLabels[setting.provider] || setting.provider}
+              </label>
+              <input
+                type="password"
+                value={setting.api_key}
+                onChange={(e) => updateApiKey(setting.provider, e.target.value)}
+                placeholder={`Enter ${providerLabels[setting.provider] || setting.provider} API key...`}
+                className="w-full px-3 py-2 rounded-xl glass text-sm text-foreground placeholder:text-muted-foreground outline-none bg-transparent"
+              />
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={saveApiKeys}
+          disabled={savingKeys}
+          className="mt-4 w-full py-3 rounded-2xl bg-accent text-accent-foreground text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {savingKeys ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          Save API Keys
+        </button>
       </div>
 
       {/* Filters */}

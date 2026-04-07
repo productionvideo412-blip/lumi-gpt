@@ -42,6 +42,31 @@ async function streamChat({
   onDone: () => void;
   signal?: AbortSignal;
 }) {
+  // Try direct provider first (Groq/OpenRouter), fallback to edge function
+  const groqKey = await resolveApiKey("groq");
+  const orKey = await resolveApiKey("openrouter");
+
+  if (groqKey || orKey) {
+    try {
+      const plainMessages = messages.map((m) => ({
+        role: m.role,
+        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+      }));
+      await sendChatMessage({
+        messages: plainMessages,
+        systemPrompt,
+        provider: "auto",
+        onDelta,
+        onDone,
+        signal,
+      });
+      return;
+    } catch (err: any) {
+      console.warn("Direct provider failed, falling back to edge function:", err.message);
+    }
+  }
+
+  // Fallback to edge function
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
