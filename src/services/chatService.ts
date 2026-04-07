@@ -53,7 +53,7 @@ export async function sendChatMessage(options: ChatOptions) {
 
   for (const p of providers) {
     try {
-      const apiKey = await resolveApiKey(p);
+      const apiKey = await resolveApiKey(p as "groq" | "openrouter");
       if (!apiKey) {
         if (provider !== "auto") {
           throw new Error(`No API key configured for ${p}. Set it in Settings or ask your admin.`);
