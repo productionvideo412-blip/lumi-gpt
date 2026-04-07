@@ -10,8 +10,8 @@ const menuItems = [
   { icon: Mic, label: "Voice Chat", path: "/voice" },
   { icon: Brain, label: "Memory", path: "/memory" },
   { icon: Crown, label: "Pricing", path: "/pricing" },
-  { icon: Settings, label: "Settings", path: "/profile" },
-  { icon: Palette, label: "Theme", path: "/profile" },
+  { icon: Key, label: "API Settings", path: "/settings" },
+  { icon: Settings, label: "Profile", path: "/profile" },
   { icon: HelpCircle, label: "Help", path: "/" },
 ];
 
