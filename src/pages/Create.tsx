@@ -47,11 +47,30 @@ const Create = () => {
         : prompt;
 
       if (selected.type === "image") {
-        const imageUrl = await generateImage({ prompt: fullPrompt });
+        // Use edge function proxy for image generation
+        const resp = await fetch(CHAT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: [{ role: "user", content: fullPrompt }],
+            type: "image",
+          }),
+          signal: controller.signal,
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.error || "Image generation failed");
+        }
+
+        const blob = await resp.blob();
+        const imageUrl = URL.createObjectURL(blob);
         setResult({ imageUrl, text: "", watermark: true });
       } else {
-        // Fetch active system prompt
-        let systemPrompt = "";
+        // Text generation via edge function proxy (streaming)
         const systemPrompts: Record<string, string> = {
           video: "You are LUMI GPT, a creative AI created by Eshant Jagtap. Generate a detailed video script/storyboard. Never mention OpenAI, Google, or DeepSeek.",
           music: "You are LUMI GPT, a music composition AI created by Eshant Jagtap. Generate detailed music composition notes. Never mention OpenAI, Google, or DeepSeek.",
@@ -60,31 +79,58 @@ const Create = () => {
           edit: "You are LUMI GPT, an image editing AI created by Eshant Jagtap. Describe editing steps needed. Never mention OpenAI, Google, or DeepSeek.",
         };
 
-        try {
-          const { data: promptData } = await supabase
-            .from("system_prompts")
-            .select("prompt_text")
-            .eq("is_active", true)
-            .limit(1)
-            .single();
-          if (promptData) systemPrompt = promptData.prompt_text + "\n\n";
-        } catch {}
-
-        systemPrompt += systemPrompts[selected.type] || systemPrompts.video;
-
-        let fullText = "";
-        await sendChatMessage({
-          messages: [{ role: "user", content: fullPrompt }],
-          systemPrompt,
+        const resp = await fetch(CHAT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: [{ role: "user", content: fullPrompt }],
+            systemPrompt: systemPrompts[selected.type] || systemPrompts.video,
+          }),
           signal: controller.signal,
-          onDelta: (text) => {
-            fullText += text;
-            setStreamedText(fullText);
-          },
-          onDone: () => {
-            setResult({ text: fullText });
-          },
         });
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.error || "Generation failed");
+        }
+
+        if (!resp.body) throw new Error("No response body");
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let fullText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let idx: number;
+          while ((idx = buffer.indexOf("\n")) !== -1) {
+            let line = buffer.slice(0, idx);
+            buffer = buffer.slice(idx + 1);
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            if (line.startsWith(":") || !line.trim() || !line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") break;
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) {
+                fullText += content;
+                setStreamedText(fullText);
+              }
+            } catch {
+              buffer = line + "\n" + buffer;
+              break;
+            }
+          }
+        }
+        setResult({ text: fullText });
       }
       toast.success("Generation complete!");
     } catch (err: any) {
