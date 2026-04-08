@@ -8,8 +8,6 @@ import SideDrawer from "@/components/SideDrawer";
 import { detectModel, fusionModels, models, type ModelInfo } from "@/lib/model-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { sendChatMessage } from "@/services/chatService";
-import { resolveApiKey } from "@/services/apiKeys";
 
 interface Message {
   id: string;
@@ -27,7 +25,7 @@ const suggestions = [
   "Explain quantum physics simply",
 ];
 
-
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 async function streamChat({
   messages,
@@ -42,32 +40,52 @@ async function streamChat({
   onDone: () => void;
   signal?: AbortSignal;
 }) {
-  // Try direct provider first (Groq/OpenRouter), fallback to edge function
-  const groqKey = await resolveApiKey("groq");
-  const orKey = await resolveApiKey("openrouter");
+  const resp = await fetch(CHAT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ messages, systemPrompt }),
+    signal,
+  });
 
-  if (groqKey || orKey) {
-    try {
-      const plainMessages = messages.map((m) => ({
-        role: m.role,
-        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
-      }));
-      await sendChatMessage({
-        messages: plainMessages,
-        systemPrompt,
-        provider: "auto",
-        onDelta,
-        onDone,
-        signal,
-      });
-      return;
-    } catch (err: any) {
-      console.warn("Direct provider failed, falling back to edge function:", err.message);
-    }
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    toast.error(err.error || "Failed to get response");
+    onDone();
+    return;
   }
 
-  // No API keys configured
-  toast.error("No API keys configured. Please add your Groq or OpenRouter key in Settings.");
+  if (!resp.body) { onDone(); return; }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let idx: number;
+    while ((idx = buffer.indexOf("\n")) !== -1) {
+      let line = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 1);
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (line.startsWith(":") || !line.trim() || !line.startsWith("data: ")) continue;
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === "[DONE]") break;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content;
+        if (content) onDelta(content);
+      } catch {
+        buffer = line + "\n" + buffer;
+        break;
+      }
+    }
+  }
   onDone();
 }
 
