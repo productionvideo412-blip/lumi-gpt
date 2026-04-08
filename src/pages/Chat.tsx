@@ -27,7 +27,7 @@ const suggestions = [
   "Explain quantum physics simply",
 ];
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+
 
 async function streamChat({
   messages,
