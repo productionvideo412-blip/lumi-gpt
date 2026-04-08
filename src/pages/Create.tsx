@@ -5,9 +5,9 @@ import ReactMarkdown from "react-markdown";
 import SideDrawer from "@/components/SideDrawer";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { sendChatMessage } from "@/services/chatService";
-import { generateImage } from "@/services/imageService";
 import { supabase } from "@/integrations/supabase/client";
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 const categories = [
   { icon: Image, label: "Image Generator", desc: "Create stunning images from text", color: "bg-accent/20", type: "image" },
