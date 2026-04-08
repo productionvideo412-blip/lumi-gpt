@@ -5,8 +5,9 @@ import ReactMarkdown from "react-markdown";
 import SideDrawer from "@/components/SideDrawer";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-
-const GENERATE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate`;
+import { sendChatMessage } from "@/services/chatService";
+import { generateImage } from "@/services/imageService";
+import { supabase } from "@/integrations/supabase/client";
 
 const categories = [
   { icon: Image, label: "Image Generator", desc: "Create stunning images from text", color: "bg-accent/20", type: "image" },
@@ -46,71 +47,44 @@ const Create = () => {
         : prompt;
 
       if (selected.type === "image") {
-        const resp = await fetch(GENERATE_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ prompt: fullPrompt, type: "image" }),
-          signal: controller.signal,
-        });
-
-        if (!resp.ok) {
-          const err = await resp.json().catch(() => ({}));
-          throw new Error(err.error || "Generation failed");
-        }
-
-        const data = await resp.json();
-        setResult({ imageUrl: data.imageUrl, text: data.text, watermark: data.watermark });
+        const imageUrl = await generateImage({ prompt: fullPrompt });
+        setResult({ imageUrl, text: "", watermark: true });
       } else {
-        // Streaming text for other generators
-        const resp = await fetch(GENERATE_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ prompt: fullPrompt, type: selected.type }),
-          signal: controller.signal,
-        });
+        // Fetch active system prompt
+        let systemPrompt = "";
+        const systemPrompts: Record<string, string> = {
+          video: "You are LUMI GPT, a creative AI created by Eshant Jagtap. Generate a detailed video script/storyboard. Never mention OpenAI, Google, or DeepSeek.",
+          music: "You are LUMI GPT, a music composition AI created by Eshant Jagtap. Generate detailed music composition notes. Never mention OpenAI, Google, or DeepSeek.",
+          website: "You are LUMI GPT, a web developer AI created by Eshant Jagtap. Generate complete HTML/CSS code. Never mention OpenAI, Google, or DeepSeek.",
+          app: "You are LUMI GPT, an app designer AI created by Eshant Jagtap. Generate detailed app design specifications. Never mention OpenAI, Google, or DeepSeek.",
+          edit: "You are LUMI GPT, an image editing AI created by Eshant Jagtap. Describe editing steps needed. Never mention OpenAI, Google, or DeepSeek.",
+        };
 
-        if (!resp.ok) {
-          const err = await resp.json().catch(() => ({}));
-          throw new Error(err.error || "Generation failed");
-        }
+        try {
+          const { data: promptData } = await supabase
+            .from("system_prompts")
+            .select("prompt_text")
+            .eq("is_active", true)
+            .limit(1)
+            .single();
+          if (promptData) systemPrompt = promptData.prompt_text + "\n\n";
+        } catch {}
 
-        if (!resp.body) throw new Error("No response body");
+        systemPrompt += systemPrompts[selected.type] || systemPrompts.video;
 
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
         let fullText = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          let idx: number;
-          while ((idx = buffer.indexOf("\n")) !== -1) {
-            let line = buffer.slice(0, idx);
-            buffer = buffer.slice(idx + 1);
-            if (line.endsWith("\r")) line = line.slice(0, -1);
-            if (!line.startsWith("data: ")) continue;
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === "[DONE]") break;
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content;
-              if (content) {
-                fullText += content;
-                setStreamedText(fullText);
-              }
-            } catch { break; }
-          }
-        }
-        setResult({ text: fullText });
+        await sendChatMessage({
+          messages: [{ role: "user", content: fullPrompt }],
+          systemPrompt,
+          signal: controller.signal,
+          onDelta: (text) => {
+            fullText += text;
+            setStreamedText(fullText);
+          },
+          onDone: () => {
+            setResult({ text: fullText });
+          },
+        });
       }
       toast.success("Generation complete!");
     } catch (err: any) {
