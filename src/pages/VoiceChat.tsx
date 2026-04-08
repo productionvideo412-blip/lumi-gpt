@@ -5,8 +5,6 @@ import { useNavigate } from "react-router-dom";
 import LumiSun from "@/components/LumiSun";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { voiceAssistantFlow } from "@/services/voiceService";
-import { resolveApiKey } from "@/services/apiKeys";
 
 type VoiceState = "idle" | "listening" | "processing" | "speaking";
 
